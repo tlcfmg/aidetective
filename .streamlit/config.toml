@@ -31,3 +31,5 @@ showSidebarBorder = true             # faint vertical rule between sidebar & bod
 
 [client]
 toolbarMode = "minimal"
+
+gatherUsageStats = false
