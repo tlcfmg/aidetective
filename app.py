@@ -1,5 +1,5 @@
 """
-AI Detector — Streamlit App
+AI Detective — Streamlit App
 ============================
 Task  : Show a researcher two abstracts side-by-side — one written by a human
         (read from a local CSV) and one rewritten by an LLM — and ask them
@@ -28,7 +28,7 @@ import streamlit as st
 
 # ── 1. Page configuration ─────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="AI Detector",
+    page_title="AI Detective",
     page_icon="🦾",
     layout="wide",
     initial_sidebar_state="collapsed",
