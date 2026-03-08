@@ -18,12 +18,12 @@ Design decisions
   current pair, so "Next" is near-instant.
 """
 
-import json
+import os
 import random
 import threading
 
+import openai
 import pandas as pd
-import requests
 import streamlit as st
 
 # ── 1. Page configuration ─────────────────────────────────────────────────────
@@ -70,13 +70,20 @@ def fetch_random_paper() -> dict | None:
     return PAPERS.sample(1).iloc[0].to_dict()
 
 
-# ── 5. Helper: call OpenRouter directly to generate an AI abstract ────────────
-_OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-_MODEL = "google/gemini-3-flash-preview"
+# ── 5. Helper: call LiteLLM proxy to generate an AI abstract ─────────────────
+_MODEL = "gpt-oss-120b"
+_OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+if not _OPENAI_API_KEY:
+    st.error("OPENAI_API_KEY is not set. Add it to .streamlit/secrets.toml or as an environment variable.")
+    st.stop()
+_client = openai.OpenAI(
+    api_key=_OPENAI_API_KEY,
+    base_url="https://ai-research-proxy.azurewebsites.net",
+)
 
 def generate_ai_abstract(original: str, title: str) -> str:
     """
-    Posts directly to the OpenRouter REST API (no SDK) and returns the
+    Calls the LiteLLM proxy (OpenAI-compatible) and returns the
     LLM-rewritten abstract.
     """
     system_msg = (
@@ -99,9 +106,9 @@ def generate_ai_abstract(original: str, title: str) -> str:
         "- Keep approximately the same length.\n"
         "- Output ONLY the rewritten abstract — no preamble, no commentary, no quotation marks."
     )
-    payload = {
-        "model": _MODEL,
-        "messages": [
+    response = _client.chat.completions.create(
+        model=_MODEL,
+        messages=[
             {"role": "system", "content": system_msg},
             {"role": "user",   "content": (
                 f"Paper title: {title}\n\n"
@@ -109,20 +116,10 @@ def generate_ai_abstract(original: str, title: str) -> str:
                 "Rewritten abstract:"
             )},
         ],
-        "temperature": 0.7,
-        "max_tokens":  600,
-    }
-    resp = requests.post(
-        _OPENROUTER_URL,
-        headers={
-            "Authorization": f"Bearer {st.secrets['openrouter_api_key']}",
-            "Content-Type": "application/json",
-        },
-        data=json.dumps(payload),
-        timeout=30,
+        temperature=0.7,
+        max_tokens=600,
     )
-    resp.raise_for_status()
-    text = resp.json()["choices"][0]["message"]["content"].strip()
+    text = response.choices[0].message.content.strip()
     # Belt-and-suspenders: strip any em/en dashes that slipped past the prompt
     text = text.replace("—", ",").replace("–", "-")
     return text
