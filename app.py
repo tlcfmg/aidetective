@@ -71,14 +71,14 @@ def fetch_random_paper() -> dict | None:
 
 
 # ── 5. Helper: call LiteLLM proxy to generate an AI abstract ─────────────────
-_MODEL = "gpt-oss-120b"
+_MODEL = "gpt-4o"
 _OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
 if not _OPENAI_API_KEY:
     st.error("OPENAI_API_KEY is not set. Add it to .streamlit/secrets.toml or as an environment variable.")
     st.stop()
 _client = openai.OpenAI(
     api_key=_OPENAI_API_KEY,
-    base_url="https://ai-research-proxy.azurewebsites.net",
+    base_url="https://llmproxy.uva.nl",
 )
 
 def generate_ai_abstract(original: str, title: str) -> str:
